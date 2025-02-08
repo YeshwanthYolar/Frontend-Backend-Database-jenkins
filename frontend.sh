@@ -1,16 +1,18 @@
 #!/bin/bash
 
 # Update package lists
-sudo apt update
+sudo apt update -y
 
 # Install Nginx
-sudo apt install -y nginx
+sudo apt install -y nginx git
 sudo systemctl start nginx
 sudo systemctl enable nginx
 
+ping -c 3 github.com
 
+sudo -u ubuntu git clone https://github.com/YeshwanthYolar/frontend-backend-application.git /home/ubuntu/app
 
-cp /home/ubuntu/index.html /var/www/html
+cp /home/ubuntu/app/index.html /var/www/html
 PUBLIC_IP=$(curl ifconfig.me)
 sed -i "s/http:\/\/public_ip:3000/http:\/\/$PUBLIC_IP:3000/" /var/www/html/index.html
 # Restart Nginx to apply changes
@@ -27,7 +29,7 @@ npm init -y
 npm install express body-parser mysql2
 npm install cors
 
-sudo cp /home/ubuntu/server.js /home/ubuntu/simple-backend/server.js
+sudo cp /home/ubuntu/app/server.js /home/ubuntu/simple-backend/server.js
 PRIVATE_IP="${private_ip}"
 sed -i "s/private_ip/$PRIVATE_IP/g" /home/ubuntu/simple-backend/server.js
 
