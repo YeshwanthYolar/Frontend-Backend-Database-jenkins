@@ -1,0 +1,82 @@
+pipeline {
+    agent any
+
+    parameters {
+        choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'Choose Terraform action: apply or destroy')
+    }
+
+    environment {
+        AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID') // Jenkins credentials for AWS
+        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY') // Jenkins credentials for AWS
+        AWS_DEFAULT_REGION = 'us-east-1' // AWS Region
+        GIT_URL = 'https://github.com/YeshwanthYolar/Frontend-Backend-Database-jenkins.git'
+    }
+
+    stages {
+        stage("Git Clone or Update") {
+            steps {
+                sh """
+                    if [ -d "app" ]; then
+                        echo "Directory 'app' already exists. Pulling latest changes..."
+                        cd app
+                        git fetch --all
+                        git checkout master
+                        git reset --hard origin/master
+                    else
+                        echo "Cloning repository..."
+                        git clone "${GIT_URL}" app
+                        cd app
+                        git checkout master
+                    fi
+                """
+            }
+        }
+
+         stage("AWS Login") {
+            steps {
+                sh """
+                    export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+                    export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+                    export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+                    aws --version
+                    aws sts get-caller-identity
+                """
+            }
+        }
+
+
+        stage("Terraform Init & Plan") {
+            steps {
+                dir("app") {
+                    sh """
+                        terraform init
+                        terraform plan -out=tfplan
+                    """
+                }
+            }
+        }
+
+        stage("Terraform Apply or Destroy") {
+            steps {
+                dir("app") {
+                    script {
+                        if (params.ACTION == 'apply') {
+                            sh "terraform apply -auto-approve"
+                        } else {
+                            sh "terraform destroy -auto-approve"
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Terraform operation completed successfully!'
+        }
+        failure {
+            echo 'Terraform operation failed!'
+        }
+    }
+}

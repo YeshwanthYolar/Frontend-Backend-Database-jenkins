@@ -1,0 +1,139 @@
+simple project to enter userdata and store in database
+
+create a vpc with one public subnet and one private subnet
+
+create a instance in public subnet 
+here public instance will be used to host the frontend application
+which will collect the data
+ 
+ here we are using 
+ nginx to host the frontend application 
+ node.js to connect backend to frontend with MySql database
+
+below commands can be used for installing above mentioned applications and tools
+ for nginx 
+
+ 	sudo apt update
+	sudo apt install nginx
+	sudo systemctl start nginx
+	sudo systemctl enable nginx
+ 
+ for node
+
+ 	sudo apt update
+	sudo apt install nodejs npm mysql-client
+	
+      Create a New Node.js Project
+	
+	mkdir simple-backend
+	cd simple-backend
+	npm init -y
+	npm install express body-parser mysql2
+	npm install cors
+
+
+
+create a instance in private subnet 
+here we can store the data submitted from the frontend application
+
+
+ to login to the private instance we must use the public instance only 
+  in public instance copy the pem key for connecting with the private instance
+  ssh into private instance using command below
+  
+	ssh -i <pem-key> ubuntu@private-ip
+	
+  here we are using mysql-server to store the data
+	      
+  below commands can be used for installing above mentioned applications and tools
+
+ for mysql-server
+ 	
+	sudo apt update
+
+     Install MySQL server:
+	
+	sudo apt install mysql-server -y
+
+     Start MySQL service:
+	
+	sudo systemctl start mysql
+	sudo systemctl enable mysql
+
+  Edit the MySQL configuration to allow remote connections:
+
+        
+	sudo vi /etc/mysql/mysql.conf.d/mysqld.cnf
+
+    Find the line: bind-address = 127.0.0.1
+    Change it to: bind-address = 0.0.0.0
+
+  Restart MySQL to apply the changes:
+    sudo systemctl restart mysql
+
+
+  Login to MySQL:
+     sudo mysql -u root -p
+
+
+  Create a new user (replace your-secure-password with your desired password):
+
+     CREATE USER 'admin'@'%' IDENTIFIED BY 'your-secure-password';
+     GRANT ALL PRIVILEGES ON *.* TO 'admin'@'%' WITH GRANT OPTION;
+     FLUSH PRIVILEGES;
+   
+  Exit MySQL:
+     EXIT;
+
+
+    Create the Database and Table in MySQL
+
+	mysql -u admin -p
+	
+	CREATE DATABASE user_data_db;
+	USE user_data_db;
+
+	CREATE TABLE users (
+	id INT AUTO_INCREMENT PRIMARY KEY,
+	name VARCHAR(100),
+	age INT,
+	email VARCHAR(100)
+	);
+
+        EXIT;
+
+remember the databse username, password, and database name 
+
+
+
+
+by these steps the setup must be almost ready to host the front end application
+
+
+in the public instance add sample index.html which is the form asking name,age,email-id 
+
+the index.html must be added in the following default nginx path which is /var/www/html/
+
+after adding restart nginx
+
+at the begining we have created a directory called simple-backend and installed necessary node files,
+here create a server.js file and add the contents given with this file    
+
+make sure to configure db part in the server.js as per you configurations
+
+start the server.js using below command
+	
+	node server.js
+   
+   this will run in the foreground
+
+we can now access the 
+frontend using  = public_ip ---> will return the sample form to submit details
+backend using  = public_ip:3000 (the port mentioned in server.js) ----> will return "Backend is working!"
+
+now to check if the data is storing in the MySql server or not
+we can 
+ssh into the private instance again and
+login to mysql user and 
+select the database
+and select the table 
